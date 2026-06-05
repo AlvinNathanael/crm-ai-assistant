@@ -1,0 +1,1 @@
+Production-oriented RAG service for CRM platforms built with Go, PostgreSQL/pgvector, Redis, and OpenAI.
