@@ -1,13 +1,15 @@
 package document
 
+import "context"
+
 // Repositories
 type RepositoryItf interface {
-	CreateDocument(param RepoCreateDocumentParam) (*RepoCreateDocumentResult, error)
-	ListDocument(param RepoListDocumentParam) (*RepoListDocumentResult, error)
+	CreateDocument(ctx context.Context, param RepoCreateDocumentParam) (*RepoCreateDocumentResult, error)
+	ListDocument(ctx context.Context, param RepoListDocumentParam) (*RepoListDocumentResult, error)
 }
 
 // Services
 type ServiceItf interface {
-	CreateDocument(param SrvCreateDocumentParam) (*SrvCreateDocumentResult, error)
-	ListDocument(param SrvListDocumentParam) (*SrvListDocumentResult, error)
+	CreateDocument(ctx context.Context, param SrvCreateDocumentParam) (*SrvCreateDocumentResult, error)
+	ListDocument(ctx context.Context, param SrvListDocumentParam) (*SrvListDocumentResult, error)
 }

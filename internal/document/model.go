@@ -1,7 +1,7 @@
 package document
 
 type Document struct {
-	ID      int64
-	Title   string
-	Content string
+	ID      int64  `json:"id"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
 }

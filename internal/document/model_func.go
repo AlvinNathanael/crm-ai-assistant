@@ -2,20 +2,36 @@ package document
 
 // Repositories
 
-type RepoCreateDocumentParam struct{}
+type RepoCreateDocumentParam struct {
+	Document Document
+}
 
-type RepoCreateDocumentResult struct{}
+type RepoCreateDocumentResult struct {
+	ID int64
+}
 
-type RepoListDocumentParam struct{}
+type RepoListDocumentParam struct {
+	ID int64
+}
 
-type RepoListDocumentResult struct{}
+type RepoListDocumentResult struct {
+	Documents []Document
+}
 
 // Services
 
-type SrvCreateDocumentParam struct{}
+type SrvCreateDocumentParam struct {
+	Document Document
+}
 
-type SrvCreateDocumentResult struct{}
+type SrvCreateDocumentResult struct {
+	ID int64
+}
 
-type SrvListDocumentParam struct{}
+type SrvListDocumentParam struct {
+	ID int64
+}
 
-type SrvListDocumentResult struct{}
+type SrvListDocumentResult struct {
+	Documents []Document
+}
