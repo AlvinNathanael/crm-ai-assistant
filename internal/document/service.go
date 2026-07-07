@@ -17,7 +17,8 @@ func NewService(repo RepositoryItf) *Service {
 func (s *Service) CreateDocument(ctx context.Context, param SrvCreateDocumentParam) (*SrvCreateDocumentResult, error) {
 	// Call the repository to create the document.
 	repoResult, err := s.repo.CreateDocument(ctx, RepoCreateDocumentParam{
-		Document: param.Document,
+		Title:   param.Title,
+		Content: param.Content,
 	})
 	if err != nil {
 		return nil, err
@@ -28,16 +29,28 @@ func (s *Service) CreateDocument(ctx context.Context, param SrvCreateDocumentPar
 	}, nil
 }
 
-func (s *Service) ListDocument(ctx context.Context, param SrvListDocumentParam) (*SrvListDocumentResult, error) {
+func (s *Service) ListDocuments(ctx context.Context, param SrvListDocumentsParam) (*SrvListDocumentsResult, error) {
 	// Call the repository to list the documents.
-	repoResult, err := s.repo.ListDocument(ctx, RepoListDocumentParam{
+	repoResult, err := s.repo.ListDocuments(ctx, RepoListDocumentsParam{})
+	if err != nil {
+		return nil, err
+	}
+
+	return &SrvListDocumentsResult{
+		Documents: repoResult.Documents,
+	}, nil
+}
+
+func (s *Service) GetDocument(ctx context.Context, param SrvGetDocumentParam) (*SrvGetDocumentResult, error) {
+	// Call the repository to get the document.
+	repoResult, err := s.repo.GetDocument(ctx, RepoGetDocumentParam{
 		ID: param.ID,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &SrvListDocumentResult{
-		Documents: repoResult.Documents,
+	return &SrvGetDocumentResult{
+		Document: repoResult.Document,
 	}, nil
 }

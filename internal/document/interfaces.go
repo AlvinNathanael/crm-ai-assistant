@@ -5,11 +5,13 @@ import "context"
 // Repositories
 type RepositoryItf interface {
 	CreateDocument(ctx context.Context, param RepoCreateDocumentParam) (*RepoCreateDocumentResult, error)
-	ListDocument(ctx context.Context, param RepoListDocumentParam) (*RepoListDocumentResult, error)
+	ListDocuments(ctx context.Context, param RepoListDocumentsParam) (*RepoListDocumentsResult, error)
+	GetDocument(ctx context.Context, param RepoGetDocumentParam) (*RepoGetDocumentResult, error)
 }
 
 // Services
 type ServiceItf interface {
 	CreateDocument(ctx context.Context, param SrvCreateDocumentParam) (*SrvCreateDocumentResult, error)
-	ListDocument(ctx context.Context, param SrvListDocumentParam) (*SrvListDocumentResult, error)
+	ListDocuments(ctx context.Context, param SrvListDocumentsParam) (*SrvListDocumentsResult, error)
+	GetDocument(ctx context.Context, param SrvGetDocumentParam) (*SrvGetDocumentResult, error)
 }

@@ -3,35 +3,63 @@ package document
 // Repositories
 
 type RepoCreateDocumentParam struct {
-	Document Document
+	Title   string
+	Content string
 }
 
 type RepoCreateDocumentResult struct {
 	ID int64
 }
 
-type RepoListDocumentParam struct {
+type RepoListDocumentsParam struct {
+}
+
+type RepoListDocumentsResult struct {
+	Documents []Document
+}
+
+type RepoGetDocumentParam struct {
 	ID int64
 }
 
-type RepoListDocumentResult struct {
-	Documents []Document
+type RepoGetDocumentResult struct {
+	Document *Document
 }
 
 // Services
 
 type SrvCreateDocumentParam struct {
-	Document Document
+	Title   string
+	Content string
 }
 
 type SrvCreateDocumentResult struct {
 	ID int64
 }
 
-type SrvListDocumentParam struct {
+type SrvListDocumentsParam struct {
+}
+
+type SrvListDocumentsResult struct {
+	Documents []Document
+}
+
+type SrvGetDocumentParam struct {
 	ID int64
 }
 
-type SrvListDocumentResult struct {
-	Documents []Document
+type SrvGetDocumentResult struct {
+	Document *Document
+}
+
+// Handlers
+
+type HandlerCreateDocumentParam struct {
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
+type HandlerCreateDocumentResponse struct {
+	Message string `json:"message"`
+	ID      int64  `json:"id"`
 }

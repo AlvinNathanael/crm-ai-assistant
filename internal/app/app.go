@@ -1,15 +1,20 @@
 package app
 
 import (
+	"database/sql"
 	"net/http"
 
+	"github.com/AlvinNathanael/crm-ai-assistant/internal/config"
+	"github.com/AlvinNathanael/crm-ai-assistant/internal/database"
 	"github.com/AlvinNathanael/crm-ai-assistant/internal/document"
 )
 
 type App struct {
+	DB  *sql.DB
+	Mux *http.ServeMux
+
 	Repos    *Repositories
 	Services *Services
-	Mux      *http.ServeMux
 }
 
 type Repositories struct {
@@ -20,24 +25,37 @@ type Services struct {
 	Document document.ServiceItf
 }
 
-func NewApp() *App {
+func NewApp(cfg config.Config) (*App, error) {
+	// Init DB.
+	db, err := database.New(cfg.PostgresDSN)
+	if err != nil {
+		return nil, err
+	}
+	if err := db.Ping(); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+
 	// Initialize repositories.
-	repos := InitRepositories()
+	repos := InitRepositories(db)
+
 	// Initialize services.
 	services := InitServices(repos)
+
 	// Initialize the HTTP serve mux.
 	mux := InitHandlers(services)
 
 	return &App{
+		DB:       db,
 		Repos:    repos,
 		Services: services,
 		Mux:      mux,
-	}
+	}, nil
 }
 
-func InitRepositories() *Repositories {
+func InitRepositories(db *sql.DB) *Repositories {
 	return &Repositories{
-		Document: document.NewRepository(),
+		Document: document.NewRepository(db),
 	}
 }
 
@@ -60,8 +78,10 @@ func InitHandlers(services *Services) *http.ServeMux {
 	handlerDocument := document.NewHandler(services.Document)
 
 	// Initialize handler paths.
+	// TODO: move route registration to feature handlers as routes grow.
 	mux.HandleFunc("POST /documents", handlerDocument.CreateDocument)
 	mux.HandleFunc("GET /documents", handlerDocument.ListDocuments)
+	mux.HandleFunc("GET /documents/{id}", handlerDocument.GetDocument)
 
 	return mux
 }
