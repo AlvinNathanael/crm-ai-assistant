@@ -19,24 +19,48 @@ func NewRepository(db *sql.DB) *Repository {
 	}
 }
 
-const createDocumentQuery = `
+const (
+	createDocumentQuery = `
 	INSERT INTO documents (title, content)
 	VALUES ($1, $2)
 	RETURNING id;
 `
 
-func (r *Repository) CreateDocument(ctx context.Context, param RepoCreateDocumentParam) (*RepoCreateDocumentResult, error) {
-	var newID int64
-	err := r.db.QueryRowContext(
-		ctx, createDocumentQuery, param.Title, param.Content,
-	).Scan(&newID)
+	createDocumentChunksQuery = `
+	INSERT INTO document_chunks (document_id, chunk_index, content)
+	VALUES ($1, $2, $3);
+`
+)
+
+func (r *Repository) CreateDocumentWithChunks(ctx context.Context, param RepoCreateDocumentWithChunksParam) (*RepoCreateDocumentWithChunksResult, error) {
+	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		log.Println("Error creating document:", err)
+		log.Printf("Error beginning transaction for creating document with chunks: %v\n", err)
 		return nil, err
 	}
-	return &RepoCreateDocumentResult{
-		ID: newID,
-	}, nil
+	defer tx.Rollback() // Ensure rollback in case of error.
+
+	var newID int64
+	err = tx.QueryRowContext(ctx, createDocumentQuery, param.Title, param.Content).Scan(&newID)
+	if err != nil {
+		log.Printf("Error creating document with chunks: %v\n", err)
+		return nil, err
+	}
+
+	for _, chunk := range param.Chunks {
+		_, err = tx.ExecContext(ctx, createDocumentChunksQuery, newID, chunk.Index, chunk.Content)
+		if err != nil {
+			log.Printf("Error creating chunk for document %d, chunk %d: %v\n", newID, chunk.Index, err)
+			return nil, err
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		log.Printf("Error committing transaction for creating document %d with chunks: %v\n", newID, err)
+		return nil, err
+	}
+	return &RepoCreateDocumentWithChunksResult{ID: newID}, nil
 }
 
 const listDocumentsQuery = `

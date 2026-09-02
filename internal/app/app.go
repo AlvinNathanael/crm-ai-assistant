@@ -40,7 +40,7 @@ func NewApp(cfg config.Config) (*App, error) {
 	repos := InitRepositories(db)
 
 	// Initialize services.
-	services := InitServices(repos)
+	services := InitServices(repos, &cfg)
 
 	// Initialize the HTTP serve mux.
 	mux := InitHandlers(services)
@@ -59,9 +59,9 @@ func InitRepositories(db *sql.DB) *Repositories {
 	}
 }
 
-func InitServices(repos *Repositories) *Services {
+func InitServices(repos *Repositories, cfg *config.Config) *Services {
 	return &Services{
-		Document: document.NewService(repos.Document),
+		Document: document.NewService(repos.Document, cfg.DocumentConfig),
 	}
 }
 

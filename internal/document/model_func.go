@@ -2,12 +2,13 @@ package document
 
 // Repositories
 
-type RepoCreateDocumentParam struct {
+type RepoCreateDocumentWithChunksParam struct {
 	Title   string
 	Content string
+	Chunks  []Chunk
 }
 
-type RepoCreateDocumentResult struct {
+type RepoCreateDocumentWithChunksResult struct {
 	ID int64
 }
 

@@ -4,9 +4,9 @@ import "context"
 
 // Repositories
 type RepositoryItf interface {
-	CreateDocument(ctx context.Context, param RepoCreateDocumentParam) (*RepoCreateDocumentResult, error)
 	ListDocuments(ctx context.Context, param RepoListDocumentsParam) (*RepoListDocumentsResult, error)
 	GetDocument(ctx context.Context, param RepoGetDocumentParam) (*RepoGetDocumentResult, error)
+	CreateDocumentWithChunks(ctx context.Context, param RepoCreateDocumentWithChunksParam) (*RepoCreateDocumentWithChunksResult, error)
 }
 
 // Services

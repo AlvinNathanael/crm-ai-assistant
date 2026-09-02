@@ -5,3 +5,8 @@ type Document struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
 }
+
+type Chunk struct {
+	Index   int
+	Content string
+}

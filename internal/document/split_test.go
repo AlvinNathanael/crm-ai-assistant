@@ -1,0 +1,114 @@
+package document_test
+
+import (
+	"reflect"
+	"testing"
+
+	"github.com/AlvinNathanael/crm-ai-assistant/internal/document"
+)
+
+func TestSplit(t *testing.T) {
+	tests := []struct {
+		name         string
+		content      string
+		maxChunkSize int
+		want         []document.Chunk
+	}{
+		{
+			name:         "empty content returns empty slice",
+			content:      "",
+			maxChunkSize: 10,
+			want:         []document.Chunk{},
+		},
+		{
+			name:         "whitespace only content returns empty slice",
+			content:      " \n\t  ",
+			maxChunkSize: 10,
+			want:         []document.Chunk{},
+		},
+		{
+			name:         "short content returns one chunk",
+			content:      "Hello CRM",
+			maxChunkSize: 20,
+			want: []document.Chunk{
+				{Index: 0, Content: "Hello CRM"},
+			},
+		},
+		{
+			name:         "trims leading and trailing whitespace",
+			content:      "  Hello CRM users.  ",
+			maxChunkSize: 30,
+			want: []document.Chunk{
+				{Index: 0, Content: "Hello CRM users."},
+			},
+		},
+		{
+			name:         "splits at word boundaries and preserves order",
+			content:      "The quick brown fox jumps over the lazy dog",
+			maxChunkSize: 15,
+			want: []document.Chunk{
+				{Index: 0, Content: "The quick brown"},
+				{Index: 1, Content: "fox jumps over"},
+				{Index: 2, Content: "the lazy dog"},
+			},
+		},
+		{
+			name:         "does not leave leading or trailing whitespace in chunks",
+			content:      "  The quick brown fox  ",
+			maxChunkSize: 10,
+			want: []document.Chunk{
+				{Index: 0, Content: "The quick"},
+				{Index: 1, Content: "brown fox"},
+			},
+		},
+		{
+			name:         "normalizes repeated whitespace between words",
+			content:      "Hello   CRM\n\tassistant",
+			maxChunkSize: 30,
+			want: []document.Chunk{
+				{Index: 0, Content: "Hello CRM assistant"},
+			},
+		},
+		{
+			name:         "splits a word only when word exceeds maximum size",
+			content:      "supercalifragilistic",
+			maxChunkSize: 10,
+			want: []document.Chunk{
+				{Index: 0, Content: "supercalif"},
+				{Index: 1, Content: "ragilistic"},
+			},
+		},
+		{
+			name:         "splits long word then continues with following words",
+			content:      "supercalifragilistic CRM",
+			maxChunkSize: 10,
+			want: []document.Chunk{
+				{Index: 0, Content: "supercalif"},
+				{Index: 1, Content: "ragilistic"},
+				{Index: 2, Content: "CRM"},
+			},
+		},
+		{
+			name:         "zero maximum size returns empty slice",
+			content:      "Hello CRM",
+			maxChunkSize: 0,
+			want:         []document.Chunk{},
+		},
+		{
+			name:         "negative maximum size returns empty slice",
+			content:      "Hello CRM",
+			maxChunkSize: -1,
+			want:         []document.Chunk{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := document.Split(tt.content, tt.maxChunkSize)
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Split() = %#v, want %#v", got, tt.want)
+			}
+		})
+	}
+}

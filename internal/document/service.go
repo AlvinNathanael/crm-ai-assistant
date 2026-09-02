@@ -2,23 +2,28 @@ package document
 
 import (
 	"context"
+
+	"github.com/AlvinNathanael/crm-ai-assistant/internal/config"
 )
 
 type Service struct {
-	repo RepositoryItf
+	repo        RepositoryItf
+	documentCfg *config.DocumentConfig
 }
 
-func NewService(repo RepositoryItf) *Service {
+func NewService(repo RepositoryItf, documentCfg *config.DocumentConfig) *Service {
 	return &Service{
-		repo: repo,
+		repo:        repo,
+		documentCfg: documentCfg,
 	}
 }
 
 func (s *Service) CreateDocument(ctx context.Context, param SrvCreateDocumentParam) (*SrvCreateDocumentResult, error) {
-	// Call the repository to create the document.
-	repoResult, err := s.repo.CreateDocument(ctx, RepoCreateDocumentParam{
+	// Call the repository to create the document with chunks.
+	repoResult, err := s.repo.CreateDocumentWithChunks(ctx, RepoCreateDocumentWithChunksParam{
 		Title:   param.Title,
 		Content: param.Content,
+		Chunks:  Split(param.Content, s.documentCfg.DocumentChunkSize),
 	})
 	if err != nil {
 		return nil, err
