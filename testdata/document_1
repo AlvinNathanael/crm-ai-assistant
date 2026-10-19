@@ -1,0 +1,25 @@
+Northstar CRM Customer Support and Sales Guide
+
+Account Management
+Every customer account should have one primary owner. The account owner is responsible for keeping the company name, industry, billing address, renewal date, and account status current. When an account changes ownership, the previous owner should add a handoff note with open opportunities, unresolved support issues, key contacts, and agreed next steps. Do not create a duplicate account when a customer changes its legal name; update the existing account and record the former name in the account notes.
+
+Contacts
+Create one contact record for each person at a customer or prospect organization. Record the person’s full name, role, work email, phone number, and preferred contact method when available. Before adding a contact, search by email address to check whether the person already exists. If an employee leaves the organization, mark the contact inactive rather than deleting the record, so past activities remain available.
+
+Lead Qualification
+A new lead should include its source, company, contact details, and the product or service of interest. The sales representative should make an initial contact attempt within one business day. During qualification, confirm the customer’s business need, expected timeline, decision process, budget range, and other vendors under consideration. Set the lead status to Qualified only when there is a clear business need and an agreed follow-up. If the lead is not a fit, record the reason before closing it.
+
+Opportunities
+Create an opportunity when a qualified prospect is evaluating a specific purchase. Use a clear name that includes the customer and product, such as “Acme — Annual Support Plan.” Set the expected close date based on the customer’s stated purchasing timeline, not an internal sales target. Update the stage after each meaningful customer interaction. Every open opportunity must have a next step, an owner, an estimated amount, and a close date. If the customer postpones the decision, update the close date and add a note explaining the delay.
+
+Support Escalation
+Log each customer issue as a support case linked to the correct account and contact. Include a concise summary, steps to reproduce, the affected product area, and the business impact. Mark a case as urgent when the customer cannot use a critical workflow or when business operations are stopped. The case owner should acknowledge urgent cases within one hour during business hours and provide an update at least every two hours until there is a workaround or resolution. Escalate security incidents immediately to the security response team; do not include passwords, access tokens, or payment card details in case notes.
+
+Notes and Activities
+Record calls, meetings, and important emails as activities on the relevant account, contact, or opportunity. Notes should state the date, participants, customer goals, decisions, commitments, and action owners. Use factual language and avoid storing sensitive personal information that is not needed for the business relationship. When a follow-up is promised, create a task with a due date and assign it to the person responsible.
+
+Data Quality and Reporting
+Review your active opportunities every Friday. Confirm that stage, amount, close date, and next step are current. Managers should review overdue tasks and unresolved urgent cases each business day. Use the CRM’s standard fields for reporting; do not put structured values such as region, product, or case severity only in free-text notes. If you find inaccurate or duplicate data, correct it or notify the record owner.
+
+Renewals
+Begin renewal planning at least 90 days before the contract end date. The account owner should confirm product usage, customer satisfaction, outstanding support issues, renewal scope, and any planned changes in customer needs. For accounts at risk, document the reason, recovery plan, responsible person, and next review date. Do not mark a renewal as committed until the customer has confirmed the renewal in writing or completed the required purchasing process.

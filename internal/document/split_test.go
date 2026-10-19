@@ -12,6 +12,7 @@ func TestSplit(t *testing.T) {
 		name         string
 		content      string
 		maxChunkSize int
+		overlap      int
 		want         []document.Chunk
 	}{
 		{
@@ -100,11 +101,46 @@ func TestSplit(t *testing.T) {
 			maxChunkSize: -1,
 			want:         []document.Chunk{},
 		},
+		{
+			name:         "overlap repeats preceding word context",
+			content:      "alpha beta gamma delta",
+			maxChunkSize: 11,
+			overlap:      4,
+			want: []document.Chunk{
+				{Index: 0, Content: "alpha beta"},
+				{Index: 1, Content: "beta gamma"},
+				{Index: 2, Content: "gamma delta"},
+			},
+		},
+		{
+			name:         "zero overlap preserves non-overlapping chunks",
+			content:      "The quick brown fox",
+			maxChunkSize: 10,
+			overlap:      0,
+			want: []document.Chunk{
+				{Index: 0, Content: "The quick"},
+				{Index: 1, Content: "brown fox"},
+			},
+		},
+		{
+			name:         "negative overlap returns empty slice",
+			content:      "Hello CRM",
+			maxChunkSize: 10,
+			overlap:      -1,
+			want:         []document.Chunk{},
+		},
+		{
+			name:         "overlap equal to maximum returns empty slice",
+			content:      "Hello CRM",
+			maxChunkSize: 10,
+			overlap:      10,
+			want:         []document.Chunk{},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := document.Split(tt.content, tt.maxChunkSize)
+			got := document.Split(tt.content, tt.maxChunkSize, tt.overlap)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Split() = %#v, want %#v", got, tt.want)

@@ -48,11 +48,11 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 
 	// Send the response.
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(HandlerCreateDocumentResponse{
 		Message: "Document created successfully",
 		ID:      result.ID,
 	})
-	w.WriteHeader(http.StatusCreated)
 }
 
 func (h *Handler) ListDocuments(w http.ResponseWriter, r *http.Request) {

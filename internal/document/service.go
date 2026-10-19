@@ -23,7 +23,11 @@ func (s *Service) CreateDocument(ctx context.Context, param SrvCreateDocumentPar
 	repoResult, err := s.repo.CreateDocumentWithChunks(ctx, RepoCreateDocumentWithChunksParam{
 		Title:   param.Title,
 		Content: param.Content,
-		Chunks:  Split(param.Content, s.documentCfg.DocumentChunkSize),
+		Chunks: Split(
+			param.Content,
+			s.documentCfg.DocumentChunkSize,
+			s.documentCfg.DocumentChunkOverlap,
+		),
 	})
 	if err != nil {
 		return nil, err
