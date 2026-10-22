@@ -1,143 +1,79 @@
-﻿# CRM AI Assistant
+# CRM AI Assistant
 
-A Go-based backend for a CRM-focused AI assistant that stores and retrieves business documents for downstream RAG workflows. The application is built around a document ingestion pipeline, chunk-based storage, and a simple REST API for creating, listing, and fetching documents.
+CRM AI Assistant is a document-grounded question-answering service for customer relationship management teams. It indexes internal guidance and answers questions using relevant passages from the source documents, with citations that make answers easier to verify.
 
-## Overview
+## Capabilities
 
-This project is a foundation for building a CRM knowledge layer that can ingest internal documents, break them into manageable chunks, and expose them through a clean API. It uses Go for the API layer, PostgreSQL for persistence, and Docker for local infrastructure.
+- Ingest, retrieve, and list business documents through a REST API.
+- Split document text into configurable, paragraph-aware chunks.
+- Generate embeddings with OpenAI and store them in PostgreSQL with pgvector.
+- Retrieve relevant passages and answer questions with source references.
+- Reindex saved documents when chunking settings change.
+- Run the API and database locally with Docker and Go.
 
-The current implementation focuses on:
-
-- Creating documents with title and content
-- Splitting long content into chunks using configurable chunk size and overlap
-- Persisting documents and chunks in PostgreSQL
-- Exposing endpoints for listing and retrieving documents
-- Providing a local development setup with Docker and migration support
-
-## Tech stack
-
-- Go
-- PostgreSQL
-- Docker Compose
-- OpenAI configuration support for future embeddings and LLM integration
-
-## Project structure
-
-```text
-.
-├── cmd/
-│   └── api/
-│       └── main.go                 # Application entrypoint
-├── docker/
-│   └── docker-compose.yml          # Local PostgreSQL container
-├── internal/
-│   ├── app/
-│   ├── config/
-│   ├── database/
-│   └── document/
-├── migrations/
-│   ├── *.up.sql
-│   └── *.down.sql
-├── .env                            # Local environment configuration
-├── go.mod
-├── go.sum
-├── run.sh
-├── README.md
-└── ...
-```
-
-## Prerequisites
-
-Before running the project, make sure you have:
+## Requirements
 
 - Go 1.24.8 or newer
-- Docker Desktop or Docker Engine
-- Access to a PostgreSQL instance (local container is included)
-- An OpenAI API key if you plan to extend the app with embeddings or LLM features
+- Docker Desktop with its Linux engine running, or Docker Engine
+- An OpenAI API key with access to the configured embedding and response models
 
 ## Configuration
 
-The application loads environment variables from `.env` using `godotenv`. At minimum, configure the database settings and any OpenAI settings you plan to use.
+Create a local environment file from the example:
 
-Example:
-
-```env
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=crm_ai_assistant
-POSTGRES_DSN=postgres://postgres:postgres@localhost:5432/crm_ai_assistant?sslmode=disable
-MIGRATION_DATABASE_URL=postgres://postgres:postgres@host.docker.internal:5432/crm_ai_assistant?sslmode=disable
-OPENAI_API_KEY=your_openai_api_key
-DOCUMENT_CHUNK_SIZE=1000
-DOCUMENT_CHUNK_OVERLAP=150
+```powershell
+Copy-Item .env.example .env
 ```
 
-## Running locally
+Set `OPENAI_API_KEY` in `.env`. The file also contains the PostgreSQL connection settings, the answer model, and document chunking defaults. Keep `.env` private and do not commit it.
 
-### Option 1: Use the provided script
+The embedding model is `text-embedding-3-small` (1,536 dimensions). The answer model defaults to `gpt-6-luna`; change it with `OPENAI_CHAT_MODEL` if needed. Chunk size and overlap are controlled by `DOCUMENT_CHUNK_SIZE` and `DOCUMENT_CHUNK_OVERLAP`.
 
-```bash
-./run.sh
+## Run locally on Windows
+
+Start Docker Desktop and wait until its Linux engine is ready. From the repository root, run:
+
+```powershell
+.\run.ps1
 ```
 
-This script will:
+The script loads `.env`, starts PostgreSQL, waits for database readiness, applies migrations, and starts the API at `http://localhost:8080`. Keep the terminal open while using the service.
 
-1. Load environment variables from `.env`
-2. Start the PostgreSQL container
-3. Wait for PostgreSQL to become ready
-4. Run database migrations
-5. Start the API server with `go run ./cmd/api`
+In a second PowerShell terminal, run the end-to-end smoke check:
 
-### Option 2: Start manually
-
-```bash
-docker compose -f docker/docker-compose.yml up -d
-export $(grep -v '^#' .env | xargs)
-go run ./cmd/api
+```powershell
+.\scripts\smoke-test.ps1
 ```
 
-The API listens on:
+The smoke check creates a sample document, asks a question, and verifies that the new document appears in the answer sources. It requires a working OpenAI API key.
+
+## API and database
+
+See [API Reference](API.md) for endpoint details, request and response examples, error behavior, and commands for inspecting PostgreSQL data.
+
+The API supports health checks, document creation and retrieval, document reindexing, and question answering. Document creation stores the document, its chunks, and their embeddings in a database transaction. Reindexing replaces a document's chunks atomically; if reindexing fails, its existing chunks are retained.
+
+Database schema changes are versioned in `migrations/`. The local PostgreSQL service uses the `pgvector/pgvector:pg17` image.
+
+## Repository layout
 
 ```text
-http://localhost:8080
+cmd/api/             HTTP API entrypoint
+docker/              Local PostgreSQL Compose configuration
+internal/app/        Application wiring and routes
+internal/config/     Environment configuration
+internal/database/   PostgreSQL connection setup
+internal/document/   Document API, chunking, persistence, retrieval
+internal/embedding/  OpenAI embeddings client
+internal/qa/         Retrieval and question answering
+migrations/          Database schema migrations
+scripts/             Local workflow helpers
 ```
 
-## API documentation
+## Project status
 
-The API listens on `http://localhost:8080`. See [API.md](API.md) for endpoint details, request and response examples, error responses, and PowerShell commands for local testing.
-
-## Database and migrations
-
-Database schema is managed through SQL migration files in the `migrations/` directory. The service currently creates two tables:
-
-- `documents`
-- `document_chunks`
-
-This gives the project a base for chunk-based retrieval and future vector-search or semantic-search improvements.
-
-## Development notes
-
-The app is intentionally structured around a clean internal layer:
-
-- `cmd/api` starts the HTTP server
-- `internal/app` wires dependencies together
-- `internal/document` contains the document domain, handlers, and services
-- `internal/database` encapsulates database access
-- `migrations` defines schema changes
-
-This makes it easier to extend the system with CRM data sources, embeddings, vector search, or additional domain-specific APIs.
-
-## Roadmap ideas
-
-Future enhancements could include:
-
-- OpenAI embeddings and semantic search
-- CRM-source connectors for leads, deals, contacts, and tickets
-- Vector search using pgvector or a dedicated vector database
-- Authentication and authorization
-- Request validation and structured error handling
-- Testing coverage for API and document processing
+The document ingestion, vector indexing, retrieval, and question-answering flows are implemented. The database migration has been applied locally, and the API health and document-list endpoints have been checked against the local database. The remaining release check is a live end-to-end run with a valid OpenAI API key, including embedding a document and receiving an answer with a source reference.
 
 ## License
 
-This project does not currently declare a license. If you intend to share or distribute it publicly, add an appropriate `LICENSE` file and reference it here.
+No license has been declared yet. Add a `LICENSE` file before distributing this project publicly.

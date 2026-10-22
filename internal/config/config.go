@@ -8,8 +8,9 @@ import (
 )
 
 type Config struct {
-	OpenAIAPIKey string
-	PostgresDSN  string
+	OpenAIAPIKey    string
+	OpenAIChatModel string
+	PostgresDSN     string
 
 	DocumentConfig *DocumentConfig
 }
@@ -23,8 +24,9 @@ func Load() Config {
 	_ = godotenv.Load()
 
 	return Config{
-		OpenAIAPIKey: os.Getenv("OPENAI_API_KEY"),
-		PostgresDSN:  os.Getenv("POSTGRES_DSN"),
+		OpenAIAPIKey:    os.Getenv("OPENAI_API_KEY"),
+		OpenAIChatModel: getEnv("OPENAI_CHAT_MODEL", "gpt-6-luna"),
+		PostgresDSN:     os.Getenv("POSTGRES_DSN"),
 
 		// Document
 		DocumentConfig: &DocumentConfig{
@@ -32,6 +34,14 @@ func Load() Config {
 			DocumentChunkOverlap: getEnvAsInt("DOCUMENT_CHUNK_OVERLAP", 150),
 		},
 	}
+}
+
+func getEnv(name, defaultValue string) string {
+	value := os.Getenv(name)
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }
 
 func getEnvAsInt(name string, defaultValue int) int {

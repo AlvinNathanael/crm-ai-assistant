@@ -71,6 +71,22 @@ func TestSplit(t *testing.T) {
 			},
 		},
 		{
+			name:         "reflows wrapped lines and preserves paragraph boundaries",
+			content:      "Lead response policy\r\nFirst attempt within one business day.\r\n\r\nOpportunity policy\r\nEvery open opportunity needs an owner.",
+			maxChunkSize: 200,
+			want: []document.Chunk{
+				{Index: 0, Content: "Lead response policy First attempt within one business day.\n\nOpportunity policy Every open opportunity needs an owner."},
+			},
+		},
+		{
+			name:         "paragraph boundary remains in normalized chunk",
+			content:      "First paragraph.\n\nSecond paragraph.",
+			maxChunkSize: 100,
+			want: []document.Chunk{
+				{Index: 0, Content: "First paragraph.\n\nSecond paragraph."},
+			},
+		},
+		{
 			name:         "splits a word only when word exceeds maximum size",
 			content:      "supercalifragilistic",
 			maxChunkSize: 10,

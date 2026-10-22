@@ -36,7 +36,8 @@ $RequiredEnvVars = @(
     "POSTGRES_PASSWORD",
     "POSTGRES_DB",
     "POSTGRES_DSN",
-    "MIGRATION_DATABASE_URL"
+    "MIGRATION_DATABASE_URL",
+    "OPENAI_API_KEY"
 )
 
 foreach ($name in $RequiredEnvVars) {
@@ -66,18 +67,16 @@ function Test-DockerEngine {
 if (-not (Test-DockerEngine)) {
     Write-Host "Docker engine is not reachable. Starting Docker Desktop..."
 
-    $PreviousErrorActionPreference = $ErrorActionPreference
     try {
-        $ErrorActionPreference = "Continue"
-        docker desktop start 2>&1 | Out-Host
-        $DockerStartExitCode = $LASTEXITCODE
+        $DockerCLI = (Get-Command docker -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+        $DockerStartProcess = Start-Process `
+            -FilePath $DockerCLI `
+            -ArgumentList @("desktop", "start") `
+            -WindowStyle Hidden `
+            -PassThru
     }
-    finally {
-        $ErrorActionPreference = $PreviousErrorActionPreference
-    }
-
-    if ($DockerStartExitCode -ne 0) {
-        throw "Could not start Docker Desktop. Start it manually, wait for the engine, then run this script again."
+    catch {
+        throw "Could not start Docker Desktop. Start it manually, wait for the engine, then run this script again. Details: $($_.Exception.Message)"
     }
 
     $DockerMaxAttempts = 60
@@ -86,6 +85,10 @@ if (-not (Test-DockerEngine)) {
     while ($DockerAttempt -lt $DockerMaxAttempts) {
         if (Test-DockerEngine) {
             break
+        }
+
+        if ($DockerStartProcess.HasExited -and $DockerStartProcess.ExitCode -ne 0) {
+            throw "Docker Desktop start command exited with code $($DockerStartProcess.ExitCode). Start Docker Desktop manually and check its Linux engine."
         }
 
         $DockerAttempt++

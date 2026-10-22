@@ -1,11 +1,11 @@
 services:
   postgres:
-    image: postgres:17
+    image: pgvector/pgvector:pg17
     container_name: crm-ai-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: crm_ai_assistant
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-crm_ai_assistant}
     ports:
       - "5432:5432"
     volumes:

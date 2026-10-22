@@ -53,6 +53,15 @@ type SrvGetDocumentResult struct {
 	Document *Document
 }
 
+type SrvReindexDocumentParam struct {
+	ID int64
+}
+
+type SrvReindexDocumentResult struct {
+	ID         int64 `json:"document_id"`
+	ChunkCount int   `json:"chunks_indexed"`
+}
+
 // Handlers
 
 type HandlerCreateDocumentParam struct {

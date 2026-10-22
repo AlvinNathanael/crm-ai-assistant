@@ -2,11 +2,15 @@ package app
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/AlvinNathanael/crm-ai-assistant/internal/config"
 	"github.com/AlvinNathanael/crm-ai-assistant/internal/database"
 	"github.com/AlvinNathanael/crm-ai-assistant/internal/document"
+	"github.com/AlvinNathanael/crm-ai-assistant/internal/embedding"
+	"github.com/AlvinNathanael/crm-ai-assistant/internal/qa"
 )
 
 type App struct {
@@ -15,6 +19,7 @@ type App struct {
 
 	Repos    *Repositories
 	Services *Services
+	QA       *qa.Service
 }
 
 type Repositories struct {
@@ -23,9 +28,20 @@ type Repositories struct {
 
 type Services struct {
 	Document document.ServiceItf
+	QA       *qa.Service
 }
 
 func NewApp(cfg config.Config) (*App, error) {
+	if strings.TrimSpace(cfg.OpenAIAPIKey) == "" {
+		return nil, fmt.Errorf("OPENAI_API_KEY is required")
+	}
+	if cfg.DocumentConfig == nil || cfg.DocumentConfig.DocumentChunkSize <= 0 {
+		return nil, fmt.Errorf("DOCUMENT_CHUNK_SIZE must be greater than zero")
+	}
+	if cfg.DocumentConfig.DocumentChunkOverlap < 0 || cfg.DocumentConfig.DocumentChunkOverlap >= cfg.DocumentConfig.DocumentChunkSize {
+		return nil, fmt.Errorf("DOCUMENT_CHUNK_OVERLAP must be at least zero and less than DOCUMENT_CHUNK_SIZE")
+	}
+
 	// Init DB.
 	db, err := database.New(cfg.PostgresDSN)
 	if err != nil {
@@ -49,6 +65,7 @@ func NewApp(cfg config.Config) (*App, error) {
 		DB:       db,
 		Repos:    repos,
 		Services: services,
+		QA:       services.QA,
 		Mux:      mux,
 	}, nil
 }
@@ -60,8 +77,18 @@ func InitRepositories(db *sql.DB) *Repositories {
 }
 
 func InitServices(repos *Repositories, cfg *config.Config) *Services {
+	embedder := embedding.NewOpenAIClient(cfg.OpenAIAPIKey)
 	return &Services{
-		Document: document.NewService(repos.Document, cfg.DocumentConfig),
+		Document: document.NewService(
+			repos.Document,
+			cfg.DocumentConfig,
+			embedder,
+		),
+		QA: qa.NewService(
+			repos.Document,
+			embedder,
+			qa.NewOpenAIAnswerer(cfg.OpenAIAPIKey, cfg.OpenAIChatModel),
+		),
 	}
 }
 
@@ -76,12 +103,15 @@ func InitHandlers(services *Services) *http.ServeMux {
 
 	// Initialize handlers.
 	handlerDocument := document.NewHandler(services.Document)
+	handlerQA := qa.NewHandler(services.QA)
 
 	// Initialize handler paths.
 	// TODO: move route registration to feature handlers as routes grow.
 	mux.HandleFunc("POST /documents", handlerDocument.CreateDocument)
 	mux.HandleFunc("GET /documents", handlerDocument.ListDocuments)
 	mux.HandleFunc("GET /documents/{id}", handlerDocument.GetDocument)
+	mux.HandleFunc("POST /documents/{id}/reindex", handlerDocument.ReindexDocument)
+	mux.HandleFunc("POST /ask", handlerQA.Ask)
 
 	return mux
 }

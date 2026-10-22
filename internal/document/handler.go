@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type Handler struct {
@@ -23,7 +24,7 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Read the request body.
-	body, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 10<<20))
 	if err != nil {
 		http.Error(w, "Failed to read request body", http.StatusBadRequest)
 		return
@@ -33,6 +34,10 @@ func (h *Handler) CreateDocument(w http.ResponseWriter, r *http.Request) {
 	var param HandlerCreateDocumentParam
 	if err := json.Unmarshal(body, &param); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	if strings.TrimSpace(param.Title) == "" || strings.TrimSpace(param.Content) == "" {
+		http.Error(w, "Title and content are required", http.StatusBadRequest)
 		return
 	}
 
@@ -77,19 +82,14 @@ func (h *Handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 	// Get the request context.
 	ctx := r.Context()
 
-	// Read the request URL (if any).
-	id := r.PathValue("id")
+	id, ok := parseDocumentID(w, r)
+	if !ok {
+		return
+	}
 
 	// Call the service to get the document.
 	result, err := h.service.GetDocument(ctx, SrvGetDocumentParam{
-		ID: func() int64 {
-			if id == "" {
-				return 0
-			}
-			// In a real application, you would want to handle the error properly if the ID is not a valid integer.
-			parsedID, _ := strconv.ParseInt(id, 10, 64)
-			return parsedID
-		}(),
+		ID: id,
 	})
 	if err != nil {
 		if errors.Is(err, ErrDocumentNotFound) {
@@ -105,4 +105,32 @@ func (h *Handler) GetDocument(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"document": result.Document,
 	})
+}
+
+func (h *Handler) ReindexDocument(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseDocumentID(w, r)
+	if !ok {
+		return
+	}
+
+	result, err := h.service.ReindexDocument(r.Context(), SrvReindexDocumentParam{ID: id})
+	if err != nil {
+		if errors.Is(err, ErrDocumentNotFound) {
+			http.Error(w, "Document not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to reindex document", http.StatusInternalServerError)
+		}
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(result)
+}
+
+func parseDocumentID(w http.ResponseWriter, r *http.Request) (int64, bool) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || id <= 0 {
+		http.Error(w, "Document ID must be a positive integer", http.StatusBadRequest)
+		return 0, false
+	}
+	return id, true
 }

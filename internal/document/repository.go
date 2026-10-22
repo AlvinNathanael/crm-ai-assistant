@@ -4,7 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
+	"strconv"
+	"strings"
 )
 
 var ErrDocumentNotFound = errors.New("document not found")
@@ -27,8 +30,8 @@ const (
 `
 
 	createDocumentChunksQuery = `
-	INSERT INTO document_chunks (document_id, chunk_index, content)
-	VALUES ($1, $2, $3);
+	INSERT INTO document_chunks (document_id, chunk_index, content, embedding)
+	VALUES ($1, $2, $3, $4::vector);
 `
 )
 
@@ -47,12 +50,9 @@ func (r *Repository) CreateDocumentWithChunks(ctx context.Context, param RepoCre
 		return nil, err
 	}
 
-	for _, chunk := range param.Chunks {
-		_, err = tx.ExecContext(ctx, createDocumentChunksQuery, newID, chunk.Index, chunk.Content)
-		if err != nil {
-			log.Printf("Error creating chunk for document %d, chunk %d: %v\n", newID, chunk.Index, err)
-			return nil, err
-		}
+	if err := insertDocumentChunks(ctx, tx, newID, param.Chunks); err != nil {
+		log.Printf("Error creating chunks for document %d: %v\n", newID, err)
+		return nil, err
 	}
 
 	err = tx.Commit()
@@ -61,6 +61,76 @@ func (r *Repository) CreateDocumentWithChunks(ctx context.Context, param RepoCre
 		return nil, err
 	}
 	return &RepoCreateDocumentWithChunksResult{ID: newID}, nil
+}
+
+func insertDocumentChunks(ctx context.Context, tx *sql.Tx, documentID int64, chunks []Chunk) error {
+	for _, chunk := range chunks {
+		if _, err := tx.ExecContext(ctx, createDocumentChunksQuery, documentID, chunk.Index, chunk.Content, formatVector(chunk.Embedding)); err != nil {
+			return fmt.Errorf("insert chunk %d: %w", chunk.Index, err)
+		}
+	}
+	return nil
+}
+
+func (r *Repository) ReplaceDocumentChunks(ctx context.Context, documentID int64, chunks []Chunk) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM document_chunks WHERE document_id = $1`, documentID); err != nil {
+		return err
+	}
+	if err := insertDocumentChunks(ctx, tx, documentID, chunks); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func formatVector(values []float32) string {
+	parts := make([]string, len(values))
+	for i, value := range values {
+		parts[i] = strconv.FormatFloat(float64(value), 'g', -1, 32)
+	}
+	return "[" + strings.Join(parts, ",") + "]"
+}
+
+const searchSimilarChunksQuery = `
+	SELECT dc.document_id, d.title, dc.chunk_index, dc.content,
+	       1 - (dc.embedding <=> $1::vector) AS similarity
+	FROM document_chunks AS dc
+	JOIN documents AS d ON d.id = dc.document_id
+	WHERE dc.embedding IS NOT NULL
+	ORDER BY dc.embedding <=> $1::vector
+	LIMIT $2;
+`
+
+func (r *Repository) SearchSimilarChunks(ctx context.Context, embedding []float32, limit int) ([]SearchResult, error) {
+	rows, err := r.db.QueryContext(ctx, searchSimilarChunksQuery, formatVector(embedding), limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	results := make([]SearchResult, 0, limit)
+	for rows.Next() {
+		var result SearchResult
+		if err := rows.Scan(
+			&result.DocumentID,
+			&result.Title,
+			&result.ChunkIndex,
+			&result.Content,
+			&result.Similarity,
+		); err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
 }
 
 const listDocumentsQuery = `
